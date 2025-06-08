@@ -652,6 +652,64 @@ class EnhancedWalletManager:
             # Fallback to simple format
             return f"{currency.lower()}_address_{hash(seed_phrase) % 1000000}"
     
+    async def generate_new_address(self, user_id: int, currency: str) -> str:
+        """Generate new address using actual coin daemon"""
+        try:
+            # Get coin config
+            coin_config = self.config.get('coins', {}).get(currency, {})
+            if not coin_config.get('enabled', False):
+                raise Exception(f"{currency} is not enabled")
+            
+            # Use RPC to generate new address from daemon
+            cli_path = coin_config.get('cli_path', f'/usr/local/bin/{currency.lower()}-cli')
+            
+            # Generate new address using daemon
+            result = subprocess.run([
+                cli_path, 'getnewaddress', f'user_{user_id}'
+            ], capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                address = result.stdout.strip()
+                logger.info(f"Generated real {currency} address: {address}")
+                return address
+            else:
+                logger.error(f"Failed to generate {currency} address: {result.stderr}")
+                raise Exception(f"Daemon error: {result.stderr}")
+                
+        except Exception as e:
+            logger.error(f"Failed to generate new {currency} address: {e}")
+            # Fallback to deterministic address
+            seed_phrase = f"user_{user_id}_seed"
+            return self.generate_address(currency, seed_phrase)
+    
+    async def get_real_balance(self, user_id: int, currency: str) -> float:
+        """Get real balance from blockchain daemon"""
+        try:
+            # Get coin config
+            coin_config = self.config.get('coins', {}).get(currency, {})
+            if not coin_config.get('enabled', False):
+                return 0.0
+            
+            # Use RPC to get balance from daemon
+            cli_path = coin_config.get('cli_path', f'/usr/local/bin/{currency.lower()}-cli')
+            
+            # Get balance for user account
+            result = subprocess.run([
+                cli_path, 'getbalance', f'user_{user_id}'
+            ], capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                balance = float(result.stdout.strip())
+                logger.info(f"Real {currency} balance for user {user_id}: {balance}")
+                return balance
+            else:
+                logger.error(f"Failed to get {currency} balance: {result.stderr}")
+                return 0.0
+                
+        except Exception as e:
+            logger.error(f"Failed to get real {currency} balance: {e}")
+            return 0.0
+    
     def create_wallet(self, user_id: int, password: str, seed_phrase: str) -> bool:
         """Create a new wallet with password encryption"""
         try:
