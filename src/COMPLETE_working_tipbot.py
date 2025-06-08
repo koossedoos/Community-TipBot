@@ -68,17 +68,33 @@ class CommunityTipbot:
     def load_config(self) -> dict:
         """Load configuration from file"""
         try:
-            with open('config/config.json', 'r') as f:
-                return json.load(f)
+            # Try enhanced config first
+            with open('config/enhanced_config.json', 'r') as f:
+                config = json.load(f)
+                # Convert to expected format
+                return {
+                    "telegram": {"bot_token": config["bot"]["token"]},
+                    "database": {"path": config["database"]["path"]},
+                    "admin": {"admin_user_ids": config["bot"]["admin_users"]},
+                    "wallet": {"encryption_key": config["security"]["encryption_key"]},
+                    "coins": config["coins"],
+                    "features": config["features"],
+                    "faucet": config["faucet"]
+                }
         except Exception as e:
-            logger.error(f"Failed to load config: {e}")
-            # Return default config if file doesn't exist
-            return {
-                "telegram": {"bot_token": "YOUR_BOT_TOKEN"},
-                "database": {"path": "data/tipbot.db"},
-                "admin": {"admin_user_ids": []},
-                "wallet": {"encryption_key": "default_key"}
-            }
+            logger.error(f"Failed to load enhanced config: {e}")
+            try:
+                with open('config/config.json', 'r') as f:
+                    return json.load(f)
+            except Exception as e2:
+                logger.error(f"Failed to load config: {e2}")
+                # Return default config if file doesn't exist
+                return {
+                    "telegram": {"bot_token": "8104147271:AAFvMsb0GsJZ_WRaCkB1eEefOEx4fe8kIG0"},
+                    "database": {"path": "data/enhanced_tipbot.db"},
+                    "admin": {"admin_user_ids": [1651155083]},  # Add your user ID
+                    "wallet": {"encryption_key": "default_key"}
+                }
     
     # ==================== START & WALLET CREATION ====================
     
@@ -162,9 +178,7 @@ class CommunityTipbot:
         # Track user activity
         self.track_user_activity(user_id, f'button_{query.data}')
         
-        if query.data == "create_wallet":
-            await self._start_wallet_creation(query, context)
-        elif query.data == "import_wallet":
+        if query.data == "import_wallet":
             await self._start_wallet_import(query, context)
         elif query.data == "learn_more":
             await self._show_learn_more(query, context)
@@ -193,8 +207,9 @@ class CommunityTipbot:
     
     # ==================== WALLET CREATION ====================
     
-    async def _start_wallet_creation(self, query, context):
+    async def _start_wallet_creation(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Start wallet creation process"""
+        query = update.callback_query
         user_id = query.from_user.id
         
         # Check if user already has wallet
@@ -226,6 +241,8 @@ class CommunityTipbot:
         """Handle wallet password input"""
         password = update.message.text
         user_id = update.effective_user.id
+        
+        logger.info(f"Password received from user {user_id}")
         
         # Delete the password message for security
         try:
@@ -681,7 +698,7 @@ class CommunityTipbot:
         
         # Wallet creation conversation
         wallet_conv_handler = ConversationHandler(
-            entry_points=[CallbackQueryHandler(self.button_callback, pattern="^create_wallet$")],
+            entry_points=[CallbackQueryHandler(self._start_wallet_creation, pattern="^create_wallet$")],
             states={
                 WALLET_PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.wallet_password)],
                 WALLET_CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.wallet_confirm)],
