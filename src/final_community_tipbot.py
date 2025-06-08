@@ -142,7 +142,7 @@ class CommunityTipbot:
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(message, reply_markup=reply_markup)
+        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode=None, parse_mode=None)
     
     async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle inline keyboard button presses"""
@@ -178,7 +178,8 @@ class CommunityTipbot:
         # Check if user already has wallet
         if self.db.get_user(user_id):
             await query.edit_message_text(
-                "🔐 You already have a wallet! Use /backup to view your seed phrase."
+                "🔐 You already have a wallet! Use /backup to view your seed phrase.",
+                parse_mode=None
             )
             return
         
@@ -190,13 +191,13 @@ class CommunityTipbot:
             "• Include uppercase letters (A-Z)\n"
             "• Include lowercase letters (a-z)\n"
             "• Include numbers (0-9)\n"
-            "• Include symbols (!@#$%^&*)\n\n"
+            "• Include symbols\n\n"
             "💡 This password encrypts your seed phrase!\n"
             "⚠️ Never share this password with anyone!\n\n"
             "Please type your password:"
         )
         
-        await query.edit_message_text(message)
+        await query.edit_message_text(message, parse_mode=None)
         return WALLET_PASSWORD
     
     async def _start_wallet_import(self, query, context):
@@ -211,7 +212,7 @@ class CommunityTipbot:
             "Please send your 24-word seed phrase:"
         )
         
-        await query.edit_message_text(message)
+        await query.edit_message_text(message, parse_mode=None)
         return WALLET_IMPORT
     
     async def _show_learn_more(self, query, context):
@@ -243,7 +244,7 @@ class CommunityTipbot:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(message, reply_markup=reply_markup)
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode=None)
     
     async def wallet_password(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle wallet password input"""
@@ -265,8 +266,9 @@ class CommunityTipbot:
                 "• Uppercase letters (A-Z)\n"
                 "• Lowercase letters (a-z)\n"
                 "• Numbers (0-9)\n"
-                "• Symbols (!@#$%^&*)\n\n"
-                "Please try again with a stronger password:"
+                "• Symbols\n\n"
+                "Please try again with a stronger password:",
+                parse_mode=None
             )
             return WALLET_PASSWORD
         
@@ -275,7 +277,8 @@ class CommunityTipbot:
         
         await update.effective_chat.send_message(
             "✅ Strong password accepted!\n\n"
-            "Please confirm your password by typing it again:"
+            "Please confirm your password by typing it again:",
+            parse_mode=None
         )
         
         return WALLET_CONFIRM
@@ -296,7 +299,8 @@ class CommunityTipbot:
         if password != stored_password:
             await update.effective_chat.send_message(
                 "❌ Passwords don't match!\n\n"
-                "Please enter your original password again:"
+                "Please enter your original password again:",
+                parse_mode=None
             )
             return WALLET_PASSWORD
         
@@ -363,7 +367,7 @@ class CommunityTipbot:
                 f"🔋 Powered By Aegisum EcoSystem"
             )
             
-            await update.effective_chat.send_message(message)
+            await update.effective_chat.send_message(message, parse_mode=None)
             
             # Clear stored password
             context.user_data.clear()
@@ -380,7 +384,8 @@ class CommunityTipbot:
             logger.error(f"Wallet creation failed: {e}")
             await update.effective_chat.send_message(
                 f"❌ Wallet creation failed: {str(e)}\n\n"
-                f"Please try again with /start"
+                f"Please try again with /start",
+                parse_mode=None
             )
             return ConversationHandler.END
     
@@ -393,8 +398,9 @@ class CommunityTipbot:
         # Check if user exists
         if not self.db.get_user(user_id):
             await update.message.reply_text(
-                "❌ You don't have a wallet yet! Use /start to create one."
-            )
+                "❌ You don't have a wallet yet! Use /start to create one.",
+                parse_mode=None
+            , parse_mode=None)
             return
         
         # Force DM for sensitive commands
@@ -403,17 +409,17 @@ class CommunityTipbot:
                 "🔒 Privacy Protection\n\n"
                 "Balance information is only available in private messages.\n"
                 "Please message me directly: @CommunityTipbot"
-            )
+            , parse_mode=None)
             return
         
         try:
             balance_text = await self._get_detailed_balance(user_id)
-            await update.message.reply_text(balance_text)
+            await update.message.reply_text(balance_text, parse_mode=None)
             
         except Exception as e:
             logger.error(f"Balance command failed: {e}")
             await update.message.reply_text(
-                f"❌ Error getting balance: {str(e)}"
+                f"❌ Error getting balance: {str(e, parse_mode=None)}"
             )
     
     async def _get_balance_summary(self, user_id: int) -> str:
@@ -483,7 +489,7 @@ class CommunityTipbot:
         if not self.db.get_user(user_id):
             await update.message.reply_text(
                 "❌ You need a wallet first! Use /start to create one."
-            )
+            , parse_mode=None)
             return
         
         # Check user cooldown
@@ -503,7 +509,7 @@ class CommunityTipbot:
                 f"• Check /challenges for rewards\n"
                 f"• Play /dice games\n\n"
                 f"🔋 Powered By Aegisum EcoSystem"
-            )
+            , parse_mode=None)
             return
         
         try:
@@ -571,12 +577,12 @@ class CommunityTipbot:
                     f"🔋 Powered By Aegisum EcoSystem"
                 )
             
-            await update.message.reply_text(message)
+            await update.message.reply_text(message, parse_mode=None)
             
         except Exception as e:
             logger.error(f"Faucet command failed: {e}")
             await update.message.reply_text(
-                f"❌ Faucet error: {str(e)}"
+                f"❌ Faucet error: {str(e, parse_mode=None)}"
             )
     
     # ==================== HELPER FUNCTIONS ====================
@@ -599,22 +605,22 @@ class CommunityTipbot:
     
     # Placeholder methods for inline callbacks
     async def _show_balance_inline(self, query, context):
-        await query.edit_message_text("Use /balance command for detailed portfolio view.")
+        await query.edit_message_text("Use /balance command for detailed portfolio view.", parse_mode=None)
     
     async def _show_deposit_inline(self, query, context):
-        await query.edit_message_text("Use /deposit command for deposit addresses.")
+        await query.edit_message_text("Use /deposit command for deposit addresses.", parse_mode=None)
     
     async def _claim_faucet_inline(self, query, context):
-        await query.edit_message_text("Use /faucet command to claim daily rewards.")
+        await query.edit_message_text("Use /faucet command to claim daily rewards.", parse_mode=None)
     
     async def _show_leaderboard_inline(self, query, context):
-        await query.edit_message_text("Use /leaderboard command for rankings.")
+        await query.edit_message_text("Use /leaderboard command for rankings.", parse_mode=None)
     
     async def _show_user_stats_inline(self, query, context):
-        await query.edit_message_text("Use /stats command for detailed statistics.")
+        await query.edit_message_text("Use /stats command for detailed statistics.", parse_mode=None)
     
     async def _show_settings_inline(self, query, context):
-        await query.edit_message_text("Use /settings command for bot settings.")
+        await query.edit_message_text("Use /settings command for bot settings.", parse_mode=None)
     
     def setup_handlers(self, application: Application):
         """Setup all command handlers"""
@@ -642,7 +648,7 @@ class CommunityTipbot:
     
     async def cancel_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Cancel any ongoing conversation"""
-        await update.message.reply_text("❌ Operation cancelled.")
+        await update.message.reply_text("❌ Operation cancelled.", parse_mode=None)
         context.user_data.clear()
         return ConversationHandler.END
     
