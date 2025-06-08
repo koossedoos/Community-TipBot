@@ -620,6 +620,38 @@ class EnhancedWalletManager:
         mnemo = Mnemonic("english")
         return mnemo.generate(strength=256)  # 24 words
     
+    def encrypt_seed_phrase(self, seed_phrase: str, password: str) -> str:
+        """Encrypt seed phrase with password"""
+        # Generate salt for this encryption
+        salt = secrets.token_hex(32)
+        return self._encrypt_seed(seed_phrase, password, salt)
+    
+    def generate_address(self, currency: str, seed_phrase: str) -> str:
+        """Generate wallet address for currency from seed phrase"""
+        try:
+            # For now, generate a deterministic address based on seed and currency
+            # In production, this would use proper HD wallet derivation
+            combined = f"{seed_phrase}_{currency}"
+            hash_obj = hashlib.sha256(combined.encode())
+            address_hash = hash_obj.hexdigest()
+            
+            # Format as currency-specific address
+            if currency == 'AEGS':
+                return f"aegs1{address_hash[:32]}"
+            elif currency == 'SHIC':
+                return f"shic1{address_hash[:32]}"
+            elif currency == 'PEPE':
+                return f"pepe1{address_hash[:32]}"
+            elif currency == 'ADVC':
+                return f"advc1{address_hash[:32]}"
+            else:
+                return f"{currency.lower()}1{address_hash[:32]}"
+                
+        except Exception as e:
+            logger.error(f"Failed to generate {currency} address: {e}")
+            # Fallback to simple format
+            return f"{currency.lower()}_address_{hash(seed_phrase) % 1000000}"
+    
     def create_wallet(self, user_id: int, password: str, seed_phrase: str) -> bool:
         """Create a new wallet with password encryption"""
         try:
